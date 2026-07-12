@@ -1,0 +1,43 @@
+# SuitabilityGate ruleset — versioned suitability thresholds (brief §10).
+#
+# THIS FILE IS THE ONLY PLACE THRESHOLDS LIVE (locked decision D13). Rules never hardcode limits.
+# Compliance tunes this file without a code release; the `version` below is stamped into every
+# DecisionRecord so any decision can be traced to the exact thresholds that judged it.
+#
+# Phase 1 carries the four in-scope rules only; the remaining catalog entries (CONCENTRATION,
+# INCOME_PROPORTIONALITY, KYC_FRESHNESS, STATED_VS_REVEALED) return in Phase 2 per the amendment.
+#
+# Risk scale (ascending): LOW < LOW_TO_MODERATE < MODERATE < MODERATELY_HIGH < HIGH < VERY_HIGH.
+
+version: "2026.07.1"
+
+rules:
+  # Age bracket caps the maximum permissible scheme riskometer (SEBI headline pattern:
+  # 70+ sold small-cap). Bands are evaluated in order; the first band with age <= maxAge applies.
+  AGE_RISK_BAND:
+    enabled: true
+    ageBands:
+      - { maxAge: 49, cap: VERY_HIGH }
+      - { maxAge: 59, cap: HIGH }
+      - { maxAge: 69, cap: MODERATELY_HIGH }
+      - { maxAge: 200, cap: MODERATE }
+
+  # Stated horizon shorter than the scheme's lock-in. No thresholds — pure comparison;
+  # null horizon => SKIPPED (recorded, auditable).
+  HORIZON_LOCKIN:
+    enabled: true
+
+  # Customer's stated risk category caps the permissible scheme riskometer.
+  STATED_RISK_MATCH:
+    enabled: true
+    caps:
+      CONSERVATIVE: MODERATE
+      MODERATE: HIGH
+      AGGRESSIVE: VERY_HIGH
+
+  # Composite stricter check for senior citizens: senior AND (high-volatility scheme OR
+  # lock-in longer than maxLockInMonths) => FAIL.
+  SENIOR_ENHANCED:
+    enabled: true
+    seniorAge: 60
+    maxLockInMonths: 36

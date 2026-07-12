@@ -1,0 +1,113 @@
+# SuitabilityGate — one-command local orchestration for all three processes (locked decision D1/D3/D7):
+# Java Modulith core + Python explanation stub + React frontend.
+#
+#     docker compose up -d --build     # all three; H2-backed, seeded with the 88-decision demo ledger
+#     docker compose down               # stop + remove containers (named volume, and its data, persists)
+#
+# Postgres stays available as an OPT-IN alternative behind a compose profile — the same core image runs
+# against it unchanged, because the datasource is env-selected (DB_URL/DB_DRIVER). Its data volume is
+# preserved even while it is off, so flipping back is lossless:
+#
+#     COMPOSE_PROFILES=postgres \
+#     DB_URL=jdbc:postgresql://postgres:5432/suitabilitygate DB_DRIVER=org.postgresql.Driver \
+#     DB_USER=suitability DB_PASSWORD=suitability \
+#     docker compose up -d --build
+#
+# Platform note: a plain `docker compose build` targets the HOST's native architecture (fast — no
+# emulation), which is all a local demo needs. That is NOT what you want for shipping an image to a
+# typically-amd64 cloud target (Railway/AWS/GCP) from an Apple Silicon Mac — do that with buildx instead,
+# which cross-compiles via QEMU rather than reusing whatever `docker compose build` last produced:
+#
+#     docker buildx build --platform linux/amd64 -f core/Dockerfile     -t suitabilitygate-core:amd64     .
+#     docker buildx build --platform linux/amd64 -f frontend/Dockerfile -t suitabilitygate-frontend:amd64 frontend
+#
+# (All three base images — azul/zulu-openjdk, node, nginx — publish both linux/amd64 and linux/arm64
+# manifests, so both paths are available; only the resulting image's architecture differs.)
+#
+# Credentials come from the environment with dev defaults (see .env.example) — never hardcoded secrets.
+services:
+  explanation-service:
+    build: ./explanation-service
+    container_name: suitabilitygate-explanation
+    environment:
+      EXPLANATION_DELAY_MS: ${EXPLANATION_DELAY_MS:-500}   # simulated LLM latency; 0 disables
+    ports:
+      # Host port is 11111 by default — deliberately off the well-trodden 8000/8080/8888/9000 dev
+      # ports to avoid clashing with whatever else is running locally. The container's internal
+      # port stays 8000 (uvicorn binds it in the Dockerfile CMD); only the host-side mapping moved.
+      - "${EXPLANATION_PORT:-11111}:8000"
+    healthcheck:
+      test: ["CMD", "uv", "run", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  core:
+    build:
+      # Context is the REPO ROOT (not ./core) so the build can also COPY ../ruleset into the image —
+      # see core/Dockerfile and the root .dockerignore.
+      context: .
+      dockerfile: core/Dockerfile
+    container_name: suitabilitygate-core
+    depends_on:
+      explanation-service:
+        condition: service_healthy
+    environment:
+      # Container-to-container DNS now that core runs in-network (vs localhost:11111 for bare-metal mvnw).
+      EXPLANATION_URL: http://explanation-service:8000
+      JWT_SECRET: ${JWT_SECRET:-dev-only-suitabilitygate-hmac-signing-secret-change-me-0123456789}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
+      # DB_URL/DB_USER/DB_PASSWORD/DB_DRIVER intentionally unset here -> H2 default (see core/Dockerfile's
+      # RULESET_PATH + application.properties). Set them (see the postgres profile note above) to switch.
+    ports:
+      - "${CORE_PORT:-8080}:8080"
+    volumes:
+      # Named volume, same pattern as suitabilitygate-pgdata — the H2 file persists across container
+      # restarts/recreates. core/Dockerfile pre-creates this path with appuser ownership so a fresh
+      # volume mount inherits it instead of defaulting to root.
+      - suitabilitygate-h2data:/app/data
+    healthcheck:
+      # No Actuator in Phase 1 (scope: brief §18) — a bare TCP check is enough to prove the JVM is up.
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    container_name: suitabilitygate-frontend
+    depends_on:
+      core:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+
+  postgres:
+    image: postgres:16-alpine            # multi-arch (linux/amd64 + linux/arm64) — runs native on Mac & Linux
+    container_name: suitabilitygate-postgres
+    profiles: ["postgres"]               # OPT-IN: started only with COMPOSE_PROFILES=postgres. H2 is the default store.
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-suitabilitygate}
+      POSTGRES_USER: ${POSTGRES_USER:-suitability}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-suitability}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - suitabilitygate-pgdata:/var/lib/postgresql/data   # persistence survives container restarts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-suitability} -d ${POSTGRES_DB:-suitabilitygate}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  # Preserved even while Postgres is off-by-default — the prototype's original 88-decision store. That
+  # same history now also seeds the H2 default via the V4__seed_demo_ledger migration, so neither store
+  # loses the demo ledger.
+  suitabilitygate-pgdata:
+  # The containerized core's H2 file (core/data/*.mv.db). Local bare-metal `mvnw` runs still use the
+  # host path core/data/ directly — this volume only applies to the `core` container above.
+  suitabilitygate-h2data:

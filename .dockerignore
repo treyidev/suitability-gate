@@ -1,0 +1,16 @@
+# Root build context (used by core/Dockerfile, which needs cross-directory access to ruleset/
+# to bake the versioned ruleset into the image — locked decision D13). Keeps the context small and
+# keeps the local H2 ledger file off the daemon socket entirely.
+.git
+.claude
+
+core/target
+core/data
+core/*.mv.db
+core/*.mv.db.*
+
+frontend/node_modules
+frontend/dist
+
+explanation-service/.venv
+explanation-service/__pycache__

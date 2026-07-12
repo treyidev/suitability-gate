@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Inline SVG favicon (fixes the 404): rounded teal square + bold white "SG". Inline SVG can't
+         reference CSS vars, so the brand teal is hardcoded here — this is markup, not a component,
+         so it's exempt from the zero-hex-in-.tsx rule. theme-color tints the browser chrome to the
+         new dark canvas so the address bar / task-switcher matches the app. -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2300836c'/%3E%3Ctext x='16' y='21' font-family='sans-serif' font-size='15' font-weight='700' fill='%23ffffff' text-anchor='middle'%3ESG%3C/text%3E%3C/svg%3E"
+    />
+    <meta name="theme-color" content="#0c1512" />
+    <title>SuitabilityGate</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,340 @@
+/*
+ * D17 design tokens — THE single swappable theme file (brief §14, CLAUDE.md §2 frontend).
+ *
+ * Why one file: the brief mandates "swappable design tokens in one file" so the whole app can be
+ * re-skinned (or handed a different bank's palette) by editing only these values. Nothing else in
+ * the codebase hardcodes a brand colour — components use the Tailwind utilities these tokens generate
+ * (`bg-primary`, `text-accent`, `border-line`, …) or the raw `var(--color-*)`.
+ *
+ * IDBI-evoking, never copying (D17): teal carries structure and the PASS verdict; orange carries the
+ * FLAG verdict and highlights. No IDBI logo or lifted assets — a neutral placeholder mark only.
+ *
+ * THEME: this LIVE block is the "Dark Ledger" dark-green palette (UI Modernization Directive §3),
+ * the owner-commissioned 2026-07-11 restyle for the hackathon judges. The neutrals are re-VALUED
+ * for dark (near-black green canvas, dark cards, light ink) while every token NAME is unchanged, so
+ * all existing components go dark automatically with zero component edits. A companion Liquid Glass
+ * layer (§3a) adds frost tokens + a reusable `.glass` recipe for chrome/overlay surfaces. The
+ * original light values are preserved verbatim in a commented block at the bottom of this file — the
+ * D17 one-file-swap guarantee means the light theme is always exactly one edit away (uncomment that
+ * block, comment this one) for the README "swap the theme" story.
+ *
+ * SAFE EXTENSIONS: add more shades/tokens here. REGRESSION TO AVOID: do not scatter hex values into
+ * components — that breaks the single-swap-point guarantee this file exists to provide.
+ */
+@theme {
+  /* Type — IBM Plex (banking heritage), bundled via @fontsource so the demo stays offline-capable.
+     Sans carries the UI; Serif is reserved for brand statements (login panel, future certificate);
+     Mono is for cert numbers + the audit ledger's key→value evidence (RuleRow). */
+  --font-sans: "IBM Plex Sans Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "IBM Plex Serif", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Brand anchors (unchanged hues — D17 brand stays constant across themes) */
+  --color-primary: #00836c;
+  --color-primary-dark: #006554;
+  --color-primary-deep: #03453a; /* darkest stop of the brand-panel gradient */
+  --color-accent: #f58220;
+  --color-accent-dark: #d96d10; /* on dark surfaces prefer --color-accent-bright for text */
+
+  /* On-dark brand variants (interactive teal + readable orange over dark tints) */
+  --color-primary-bright: #1fa98a; /* links, active nav, focus rings on dark */
+  --color-accent-bright: #f9a054; /* readable orange for text-on-dark-tint */
+
+  /* Neutrals — re-valued for dark (names unchanged) */
+  --color-canvas: #0c1512; /* page background, near-black green */
+  --color-surface: #111c18; /* cards */
+  --color-ink: #e9f1ed; /* primary text */
+  --color-muted: #93a8a0; /* secondary text */
+  --color-line: #23342e; /* borders / dividers */
+
+  /* Tints — re-valued for dark (names unchanged) */
+  --color-primary-tint: #0e2e27; /* teal-tinted fills (chips, AI panel) */
+  --color-accent-tint: #2e1c0c; /* orange-tinted fills — brand-energy/highlight only (NOT failure;
+                                   failure fills use --color-danger-tint since the 2026-07-11 recolour) */
+
+  /* Structural tokens — inset/elevated surfaces + the app-shell rail */
+  --color-surface-2: #16241f; /* inset/elevated: audit ledger block, provenance strip, topbar */
+  --color-sidebar: #0a110e; /* app-shell rail (unused until P1); one step darker than canvas */
+
+  /* Status trio (reference-style filled pills) */
+  --color-success: #16a36b;
+  --color-warning: #e8a13d;
+  --color-danger: #e25c5c;
+  /* Darker danger for white-text fills (Sign out, FLAGGED banner). White on --color-danger measures
+     ~3.55:1 (below the 4.5:1 AA floor); this darker red measures ~5:1 white-on-fill. Token-only per
+     §2.1 — controls pull from here rather than scattering a hex into the component. */
+  --color-danger-strong: #c73e3e;
+  /* Failure family for on-dark surfaces (colour re-architecture 2026-07-11: RED = failure). The
+     dark-theme siblings of accent-tint/accent-bright, but for FLAGGED/failed-rule/error UI:
+     danger-tint = a dark red-tinted fill; danger-bright = a readable red text on dark. */
+  --color-danger-tint: #2e0c10; /* dark red-tinted fill (FLAG chip, error box, failed-rule) */
+  --color-danger-bright: #ea8080; /* readable red text on dark (failed-rule icon/text, error text) */
+
+  /* Liquid Glass layer (directive §3a) — frost tokens for chrome/overlay surfaces only.
+     color-mix over the semantic tokens so a palette swap re-tints the glass too. */
+  --glass-surface: color-mix(in srgb, var(--color-surface) 72%, transparent);
+  --glass-sidebar: color-mix(in srgb, var(--color-sidebar) 78%, transparent);
+  --glass-field: color-mix(in srgb, var(--color-surface-2) 65%, transparent);
+  --glass-line: color-mix(in srgb, var(--color-line) 60%, transparent);
+  --glass-highlight: rgba(233, 241, 237, 0.07); /* 1px top-edge sheen — the "lit rim" */
+  --glass-blur: 18px;
+  --glass-saturate: 140%;
+}
+
+/*
+ * SEBI Risk-o-meter ramp (directive §6.5) — teal→amber→orange, evoking the regulator's meter without
+ * copying its green-red. Token-derived (color-mix over the brand anchors, the same pattern as the glass
+ * tokens) so a palette swap re-tints the gauge and the D17 one-file-swap guarantee holds. Routed THROUGH
+ * amber so the midpoint is not a muddy teal↔orange blend. NEVER red: a high-risk scheme is a fact, not a
+ * FLAGGED verdict (red is reserved for failure, colour re-architecture 2026-07-11) — VERY_HIGH is a deep
+ * orange, never red.
+ *
+ * `@theme static` (NOT a plain `@theme` block): these tokens are consumed ONLY as raw `var(--color-risk-N)`
+ * inside RiskometerGauge's SVG — never via a Tailwind utility class or a CSS recipe. Tailwind v4's default
+ * usage-based tree-shaking therefore drops them from `:root` (verified: only `--color-risk-1` survived,
+ * because it aliases an already-emitted token); `static` forces all six to emit unconditionally. The glass
+ * tokens above escape this only because the `.glass`/`.field-inset` recipes reference them via `var()`.
+ */
+@theme static {
+  --color-risk-1: var(--color-primary-bright); /* LOW — teal */
+  --color-risk-2: color-mix(in srgb, var(--color-primary-bright) 55%, var(--color-warning)); /* LOW_TO_MODERATE */
+  --color-risk-3: var(--color-warning); /* MODERATE — amber */
+  --color-risk-4: color-mix(in srgb, var(--color-warning) 45%, var(--color-accent)); /* MODERATELY_HIGH */
+  --color-risk-5: var(--color-accent); /* HIGH — orange */
+  --color-risk-6: var(--color-accent-dark); /* VERY_HIGH — deep orange (never red) */
+}
+
+/*
+ * The one reusable frost recipe (directive §3a). Apply to CHROME + OVERLAY surfaces only — sidebar,
+ * topbar, login card, select popovers — NEVER the verdict banner or the audit ledger block (those
+ * stay opaque; the regulatory artifact's legibility is non-negotiable). No glass-on-glass (Apple
+ * HIG, §1b): anything sitting on a glass surface uses a solid tinted fill, never nested `.glass`.
+ * Defined here in P0; not yet applied to any component (P1/P1.5 wire it to the shell + login card).
+ */
+.glass {
+  background: var(--glass-surface);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-line);
+  box-shadow: inset 0 1px 0 var(--glass-highlight); /* the sheen */
+}
+
+/*
+ * Background overrides for the frost recipe (directive §3a, §5). Applied ALONGSIDE `.glass`
+ * (`class="glass glass-rail"`) — declared here, after `.glass`, so this single-class rule wins the
+ * `background` on equal specificity by source order. Keeps the override token-driven and out of the
+ * components (no inline styles, no hex).
+ */
+.glass-rail {
+  background: var(--glass-sidebar); /* app-shell rail — one step darker than the topbar frost */
+}
+
+/*
+ * Field material (directive §5a "glass inset"). Base look only — bg + hairline + top sheen; the focus
+ * ring is a Tailwind `focus:` utility on the element (higher specificity, so it wins on focus and the
+ * ring replaces the sheen while focused). NOT `.glass`: fields carry no backdrop-filter, so a field on
+ * the login glass card is a solid tinted fill, never nested glass (§1b no glass-on-glass).
+ */
+.field-inset {
+  background: var(--glass-field);
+  border: 1px solid var(--glass-line);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+}
+
+/*
+ * Field focus glow (owner request 2026-07-11): a soft teal OUTER bloom on the edges of any focused
+ * field — the SAME treatment for TextField inputs and the SelectField trigger (both carry `.field-inset`
+ * on the focusable element). It doubles as the keyboard focus indicator: a crisp ~2px teal ring for a11y
+ * plus the outer glow for feel. Token-derived (`color-mix` over --color-primary-bright), no raw hex.
+ * `:focus-within` so it fires whether the field element itself or a child holds focus. This rule is
+ * UNLAYERED (like all of theme.css) so it authoritatively owns the focused look over Tailwind's layered
+ * focus utilities — the components therefore no longer carry their own focus ring/border utilities.
+ */
+.field-inset:focus-within {
+  border-color: var(--color-primary-bright);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 0 2px color-mix(in srgb, var(--color-primary-bright) 50%, transparent),
+    0 0 14px 2px color-mix(in srgb, var(--color-primary-bright) 40%, transparent);
+  outline: none;
+}
+
+/*
+ * "Already served" prospect glow (owner request 2026-07-12): an established client — one who already has
+ * ≥1 decision on record — in the RM Prospects worklist gets a bright orange bloom, so an RM instantly sees
+ * who has been advised before. It is a HIGHLIGHT, not a failure, so it uses the accent/orange family and
+ * NEVER red (the 2026-07-11 colour re-architecture reserves red for failures). Mirrors the field-focus-glow
+ * recipe (a crisp ring + an outer bloom), token-derived via color-mix, no raw hex.
+ */
+.glow-served {
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 45%, transparent),
+    0 0 22px 2px color-mix(in srgb, var(--color-accent) 32%, transparent);
+}
+
+/*
+ * Primary-button fill (directive §5a) — the teal gradient + inset top sheen shared by Evaluate and
+ * Sign in so both read as one control. Hover-lift / press are motion springs on the element; the
+ * focus ring is a Tailwind `focus-visible:` utility (wins over this sheen while focused).
+ */
+.btn-primary-fill {
+  background-image: linear-gradient(to bottom, var(--color-primary), var(--color-primary-dark));
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+}
+
+/*
+ * Select popover open animation (directive §5a) — scale 0.96→1 + fade from the trigger-anchored
+ * origin Radix exposes. Keyed on Radix's own `data-state`, so it fires exactly when the panel mounts
+ * open. Reduced-motion collapses it to an instant appear (state still switches).
+ */
+@keyframes sg-select-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.select-popover[data-state="open"] {
+  transform-origin: var(--radix-select-content-transform-origin);
+  animation: sg-select-in 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * The "working border" (directive §5b) — the ONE sanctioned looping animation, shown ONLY while a real
+ * operation is genuinely in flight (Evaluate, Sign in, the explanation Generating chip). A bright teal
+ * light band travels the perimeter (a conic-gradient rotated by the animated `--sg-angle` custom
+ * property), masked to a thin ring; a blurred twin (`::after`) blooms the light outward = the 3D glow.
+ * Indeterminate by design — it says "working", never a fabricated percentage (we have no real
+ * progress data). `--sg-angle` is registered via `@property` so it can be animated as an <angle>;
+ * where `@property` is unsupported the band sits static (still truthful). Pseudo-elements sit at
+ * z-index -1 inside the host's own stacking context (`isolation: isolate`) so the ring paints over the
+ * button fill but under its label, and the blur can bloom past the edge.
+ */
+@property --sg-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes sg-border-spin {
+  to {
+    --sg-angle: 360deg;
+  }
+}
+.working-border {
+  position: relative;
+  isolation: isolate;
+}
+.working-border::before,
+.working-border::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  /* A ~100° travelling arc with a NEAR-WHITE HOT CORE (luminance contrast — a same-hue teal band on
+     the dark-green canvas reads flat; the ink-white centre makes it pop and read as flowing light).
+     The hot colour is token-derived (`--color-ink` warmed toward the brand teal), so no raw hex. */
+  /* PROCESSING = ORANGE (colour re-architecture 2026-07-11): the band is `--color-accent` with a warm
+     near-white HOT CORE, which pops hard against the dark-green canvas (luminance + hue contrast).
+     `+255deg` offset places the hot core (~60° into the gradient) at ~315° = the button's TOP-LEFT
+     corner at animation start; as `--sg-angle` increases (clockwise), the band sweeps RIGHT along the
+     top edge first, then around the rest of the perimeter — the ignition path the owner specified.
+     Colours token-derived, no raw hex. */
+  background: conic-gradient(
+    from calc(var(--sg-angle) + 255deg),
+    transparent 0deg,
+    color-mix(in srgb, var(--color-accent) 55%, transparent) 16deg,
+    var(--color-accent) 40deg,
+    color-mix(in srgb, var(--color-ink) 85%, var(--color-accent)) 60deg,
+    var(--color-accent) 80deg,
+    color-mix(in srgb, var(--color-accent) 55%, transparent) 104deg,
+    transparent 122deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: sg-border-spin 1.4s linear infinite;
+}
+/* Sharp band — the light itself (2.5px so it reads as a light, not a hairline). */
+.working-border::before {
+  padding: 2.5px;
+}
+/* Blurred twin — the 3D halo that blooms OUTSIDE the edge and travels with the band. A thicker ring
+   + large blur throws a soft coloured glow onto the dark surface behind the button. */
+.working-border::after {
+  padding: 4px;
+  filter: blur(11px);
+  opacity: 0.95;
+}
+
+/*
+ * Static variant (directive §5b + §7): the reduced-motion / no-@property fallback for the working
+ * border — a steady bright teal ring with a soft outer glow, no travel. Consumers switch to this class
+ * under `useReducedMotion`; it is also what a browser lacking `@property` degrades toward.
+ */
+.working-border-static {
+  position: relative;
+  isolation: isolate;
+}
+.working-border-static::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  /* Static PROCESSING = orange too — 2px bright ring + a soft warm halo, no sweep. */
+  border: 2px solid var(--color-accent);
+  box-shadow:
+    0 0 12px 1px color-mix(in srgb, var(--color-accent) 60%, transparent),
+    0 0 4px color-mix(in srgb, var(--color-ink) 70%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .select-popover[data-state="open"] {
+    animation: none;
+  }
+  .working-border::before,
+  .working-border::after {
+    animation: none;
+  }
+}
+
+/*
+ * ── LIGHT THEME (original D17 values) — one file-swap away ──────────────────────────────────────
+ *
+ * This is the ORIGINAL light palette, kept verbatim so the "swap the theme in one file" guarantee
+ * (D17, README story) holds: to return to light, comment out the LIVE `@theme{}` block above and
+ * uncomment this one. Do NOT delete it — it is the other half of the one-file-swap promise and the
+ * only record of the pre-Dark-Ledger values. (The Dark Ledger block adds tokens this block lacks —
+ * primary-bright, accent-bright, surface-2, sidebar, the status trio, and the glass layer; re-add
+ * light values for those if a full light restore is ever wired.)
+ *
+ * @theme {
+ *   --font-sans: "IBM Plex Sans Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+ *   --font-serif: "IBM Plex Serif", Georgia, serif;
+ *
+ *   --color-primary: #00836c;
+ *   --color-primary-dark: #006554;
+ *   --color-primary-deep: #03453a;
+ *   --color-primary-tint: #e6f2ef;
+ *
+ *   --color-accent: #f58220;
+ *   --color-accent-dark: #d96d10;
+ *   --color-accent-tint: #fdeede;
+ *
+ *   --color-ink: #1a1f24;
+ *   --color-muted: #5c6670;
+ *   --color-line: #e3e7ea;
+ *   --color-surface: #ffffff;
+ *   --color-canvas: #f6f8f9;
+ * }
+ */

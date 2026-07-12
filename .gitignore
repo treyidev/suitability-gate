@@ -1,0 +1,47 @@
+# ── Java / build tools ──────────────────────────────────────────────
+target/
+build/
+.gradle/
+!**/src/**/build/
+*.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/.mvn/wrapper/maven-wrapper.jar
+hs_err_pid*
+
+# ── H2 (Decision Record module owns the DB; file-backed, never committed) ─
+*.db
+*.mv.db
+*.trace.db
+data/
+
+# ── Node / frontend ─────────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+*.local
+
+# ── Dev-only scratch (headless drive harness etc.) — local tool, never shipped ──
+/scratchpad/
+
+# ── Python (explanation-service) ────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# ── Secrets / env (secrets via env only — never in code) ────────────
+.env
+.env.*
+!.env.example
+
+# ── IDE / OS ────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ── Logs ────────────────────────────────────────────────────────────
+*.log
+logs/

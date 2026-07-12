@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging configuration — OPERATIONAL traceability only.
+
+  This is NOT the audit trail. The legal/regulatory audit trail is the append-only DecisionRecord
+  ledger (brief §6); logs are for engineers/ops (what the system did, timings, errors). The two are
+  complementary and must never substitute for each other. See CLAUDE.md "Logging & Traceability".
+
+  The console pattern carries the per-evaluation correlation id [%X{evalId}] via MDC, so every line
+  emitted while handling one evaluation shares an id and can be grepped as a unit. The id is set at
+  the gateway entry point and cleared in a finally block.
+
+  PII DISCIPLINE: logs reference IDs ONLY (customerId, recordId, certificateNumber, rmId) — never
+  names, income, DOB, or any customer PII. Sensitive data lives only in the sealed ledger.
+-->
+<configuration>
+
+    <!-- Spring Boot's %clr colour conversion rule + LOG_EXCEPTION_CONVERSION_WORD default. -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %clr(%5p) %clr([%X{evalId:-no-eval}]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <!-- Our code logs at DEBUG for stage-by-stage traceability during the prototype. -->
+    <logger name="com.treyi.suitabilitygate" level="DEBUG"/>
+
+</configuration>

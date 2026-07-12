@@ -1,0 +1,53 @@
+/*
+ * Global stylesheet entry. Order matters: fonts first (bundled locally via @fontsource — the demo
+ * must run with no external network), then Tailwind, then the D17 token file that defines the brand
+ * palette, then a minimal base layer.
+ */
+@import "@fontsource-variable/ibm-plex-sans";
+@import "@fontsource/ibm-plex-serif/400.css";
+@import "@fontsource/ibm-plex-serif/500.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "tailwindcss";
+@import "./theme.css";
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  /* Ambient glows (directive §3a): two large, very subtle static radial teal washes over the near-
+     black canvas. They cure the flat-black feel and give the Liquid Glass frost (§3a) something to
+     blur. Static only — "nothing floats" still holds. Token-derived via color-mix, so a palette swap
+     re-tints them. */
+  background:
+    radial-gradient(
+      1100px 700px at 85% -10%,
+      color-mix(in srgb, var(--color-primary) 13%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 650px at -10% 108%,
+      color-mix(in srgb, var(--color-primary-deep) 28%, transparent),
+      transparent 55%
+    ),
+    var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/*
+ * Ledger-grid canvas — the login backdrop. A faint 28px rule grid (a nod to the ledger/audit-record
+ * heart of the product) under two very low-chroma brand washes (teal top-left, orange bottom-right).
+ * All colours are derived from the D17 tokens via color-mix, so a palette swap re-tints this too.
+ */
+@utility bg-ledger-grid {
+  background-color: var(--color-canvas);
+  background-image:
+    radial-gradient(60rem 40rem at 12% -10%, color-mix(in srgb, var(--color-primary) 7%, transparent), transparent 60%),
+    radial-gradient(50rem 35rem at 105% 110%, color-mix(in srgb, var(--color-accent) 5%, transparent), transparent 60%),
+    linear-gradient(color-mix(in srgb, var(--color-ink) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-ink) 4%, transparent) 1px, transparent 1px);
+  background-size: auto, auto, 28px 28px, 28px 28px;
+}

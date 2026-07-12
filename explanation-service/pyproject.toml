@@ -1,0 +1,20 @@
+# SuitabilityGate Explanation Service (Phase-1 stub).
+#
+# A separate FastAPI process (locked decision D3): it exists to PROVE the verdict→explanation boundary
+# — the LLM is strictly downstream of a frozen decision and only renders prose. In Phase 1 it serves
+# canned text; Gemini is deliberately NOT wired. Managed with uv (never pip).
+
+[project]
+name = "suitabilitygate-explanation-service"
+version = "0.1.0"
+description = "Stub explanation service — renders canned plain-language explanations for frozen decisions."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+]
+
+[tool.uv]
+# This is an application, not an installable library — uv manages the venv from `dependencies` and
+# runs the app via `uv run`, without building/installing the project itself.
+package = false

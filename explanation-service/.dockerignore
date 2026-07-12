@@ -1,0 +1,7 @@
+# Keep the build context minimal and reproducible.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.python-version
